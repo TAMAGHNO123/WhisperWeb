@@ -9,6 +9,7 @@ export const useChatStore = create((set, get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  unreadMessages: {}, // NEW
 
   getUsers: async () => {
     set({ isUsersLoading: true });
@@ -44,25 +45,27 @@ export const useChatStore = create((set, get) => ({
   },
 
   subscribeToMessages: () => {
-    const { selectedUser } = get();
-    if (!selectedUser) return;
-
     const socket = useAuthStore.getState().socket;
-
-
-
-
     socket.on("newMessage", (newMessage) => {
-  // Show message if it's from or to the selected user
-  if (
-    newMessage.senderId === selectedUser._id ||
-    newMessage.receiverId === selectedUser._id
-  ) {
-    set({
-      messages: [...get().messages, newMessage],
+      const { selectedUser, messages, unreadMessages } = get();
+      if (
+        selectedUser &&
+        (newMessage.senderId === selectedUser._id ||
+          newMessage.receiverId === selectedUser._id)
+      ) {
+        set({
+          messages: [...messages, newMessage],
+        });
+      } else {
+        // Increment unread count for the sender
+        set({
+          unreadMessages: {
+            ...unreadMessages,
+            [newMessage.senderId]: (unreadMessages[newMessage.senderId] || 0) + 1,
+          },
+        });
+      }
     });
-  }
-});
   },
 
   unsubscribeFromMessages: () => {
@@ -70,5 +73,17 @@ export const useChatStore = create((set, get) => ({
     socket.off("newMessage");
   },
 
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setSelectedUser: (selectedUser) => {
+    // When switching chats, clear unread count for that user
+    const { unreadMessages } = get();
+    if (selectedUser && unreadMessages[selectedUser._id]) {
+      set({
+        unreadMessages: {
+          ...unreadMessages,
+          [selectedUser._id]: 0,
+        },
+      });
+    }
+    set({ selectedUser });
+  },
 }));
