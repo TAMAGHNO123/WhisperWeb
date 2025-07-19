@@ -72,6 +72,30 @@ export const logout = (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const updateProfile = async (req, res) => {
+    try {
+        const { fullName, profilePic } = req.body;
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (fullName) user.fullName = fullName;
+        if (profilePic) user.profilePic = profilePic;
+        await user.save();
+        res.status(200).json({
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            profilePic: user.profilePic,
+            createdAt: user.createdAt,
+        });
+    } catch (error) {
+        console.log("Error in updateProfile controller:", error.message);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 export const checkAuth = (req, res) => {
     // req.user is set by protectRoute middleware
     res.status(200).json(req.user);
