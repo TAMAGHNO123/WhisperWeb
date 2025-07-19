@@ -72,3 +72,7 @@ export const logout = (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+export const checkAuth = (req, res) => {
+    // req.user is set by protectRoute middleware
+    res.status(200).json(req.user);
+};
